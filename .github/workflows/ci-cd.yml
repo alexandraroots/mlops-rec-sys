@@ -89,26 +89,16 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
 
-  deploy-railway:
+  deploy-job:
     needs: build-and-push
     runs-on: ubuntu-latest
+    container: ghcr.io/railwayapp/cli:latest
+    env:
+      SVC_ID: my-service
+      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Railway CLI
-        run: |
-          curl -LO https://github.com/railwayapp/cli/releases/download/v3.0.18/railway_3.0.18_linux_amd64.tar.gz
-          tar -xzf railway_3.0.18_linux_amd64.tar.gz
-          chmod +x railway
-          sudo mv railway /usr/local/bin/
-          railway --version
-
-      - name: Deploy application
-        run: |
-          railway login --ci ${{ secrets.RAILWAY_TOKEN }}
-          railway deploy --service mlops-rec-sys --environment production --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      - uses: actions/checkout@v3
+      - run: railway up --service=${{ env.SVC_ID }}
