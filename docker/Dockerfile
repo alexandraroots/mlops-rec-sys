@@ -2,13 +2,11 @@ FROM python:3.13-slim AS base
 
 WORKDIR /app
 
-COPY pyproject.toml ./
+COPY requirements.txt ./
 COPY src ./src
 COPY models ./models
 
-RUN pip install --no-cache-dir .
-
-ENV PYTHONPATH=/app/src:/app/src/mlops_rec_sys/proto:$PYTHONPATH
+RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 50051
 
