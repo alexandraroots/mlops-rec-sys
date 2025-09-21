@@ -35,30 +35,34 @@ jobs:
         curl -sSL https://install.python-poetry.org | python3 -
         echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-    - name: Install dependencies with Poetry
+    - name: Install dependencies
       run: |
-        poetry install --with dev --no-interaction --no-ansi
+        poetry install --no-interaction --no-ansi
+
+    - name: Install test and lint dependencies
+      run: |
+        pip install flake8 black pylint pytest
 
     - name: Lint with flake8
       run: |
-        poetry run flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
-        poetry run flake8 src --count --max-complexity=10 --max-line-length=127 --statistics
+        flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 src --count --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Check formatting with black
       run: |
-        poetry run black --check src/
+        black --check src/
 
     - name: Run pylint
       run: |
-        poetry run pylint src/ --disable=all --enable=E,F --fail-under=8
+        pylint src/ --disable=all --enable=E,F --fail-under=8
 
     - name: Run unit tests
       run: |
         if [ -d "tests" ]; then
-          poetry run python -m pytest tests/ -v --cov=src --cov-report=xml
+          python -m pytest tests/ -v --cov=src --cov-report=xml
         else
-          echo "No tests directory found, skipping tests"
-          poetry run python -c "import sys; sys.path.append('src'); from mlops_rec_sys import __version__; print(f'Version: {__version__}')"
+          echo "No tests directory found, running basic import test"
+          python -c "import sys; sys.path.append('src'); from mlops_rec_sys import __version__; print(f'Version: {__version__}')"
         fi
 
   build-and-push:
@@ -74,7 +78,6 @@ jobs:
         run: |
           echo "Building image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}"
           echo "GitHub Actor: ${{ github.actor }}"
-          echo "Repository: ${{ github.repository }}"
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -107,7 +110,6 @@ jobs:
           tags: |
             type=sha
             type=ref,event=branch
-            type=ref,event=pr
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
