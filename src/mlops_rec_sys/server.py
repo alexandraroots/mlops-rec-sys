@@ -1,15 +1,11 @@
-import grpc
-from concurrent import futures
+import logging
+import os
 import time
+from concurrent import futures
+
+import grpc
 import numpy as np
 import onnxruntime as ort
-import logging
-import sys
-import os
-
-sys.path.append(os.path.join(os.path.dirname(__file__), 'proto'))
-sys.path.append(os.path.dirname(__file__))
-
 import proto.recommendation_pb2 as recommendation_pb2
 from proto.recommendation_pb2_grpc import RecommenderServicer, add_RecommenderServicer_to_server
 
@@ -27,10 +23,7 @@ class RecommenderService(RecommenderServicer):
         """
         logger.info(f"🔄 Загрузка ONNX модели из {model_path}...")
         try:
-            self.session = ort.InferenceSession(
-                model_path,
-                providers=['CPUExecutionProvider']
-            )
+            self.session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
             self.input_name = self.session.get_inputs()[0].name
             logger.info("✅ Модель успешно загружена")
 
@@ -91,7 +84,7 @@ def serve():
     Запуск gRPC сервера
     """
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
-    model_path = os.path.join(base_dir, 'models', 'recommendation_model.onnx')
+    model_path = os.path.join(base_dir, "models", "recommendation_model.onnx")
 
     if not os.path.exists(model_path):
         logger.error(f"❌ Модель не найдена по пути: {model_path}")
@@ -99,10 +92,7 @@ def serve():
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
-        options=[
-            ('grpc.max_send_message_length', 50 * 1024 * 1024),
-            ('grpc.max_receive_message_length', 50 * 1024 * 1024)
-        ]
+        options=[("grpc.max_send_message_length", 50 * 1024 * 1024), ("grpc.max_receive_message_length", 50 * 1024 * 1024)],
     )
 
     service = RecommenderService(model_path)
@@ -110,7 +100,7 @@ def serve():
     add_RecommenderServicer_to_server(service, server)
 
     port = 50051
-    server.add_insecure_port(f'[::]:{port}')
+    server.add_insecure_port(f"[::]:{port}")
     server.start()
 
     logger.info(f"🚀 gRPC сервер запущен на порту {port}")
@@ -125,5 +115,5 @@ def serve():
         server.stop(0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     serve()

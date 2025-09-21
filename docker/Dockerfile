@@ -2,14 +2,13 @@ FROM python:3.13-slim AS base
 
 WORKDIR /app
 
-# Установить зависимости напрямую
-# Копируем метаданные и код
 COPY pyproject.toml ./
 COPY src ./src
 COPY models ./models
 
-# Теперь ставим
 RUN pip install --no-cache-dir .
+
+ENV PYTHONPATH=/app/src:/app/src/mlops_rec_sys/proto:$PYTHONPATH
 
 EXPOSE 50051
 

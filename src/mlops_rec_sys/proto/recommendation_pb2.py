@@ -9,32 +9,26 @@ from google.protobuf import descriptor_pool as _descriptor_pool
 from google.protobuf import runtime_version as _runtime_version
 from google.protobuf import symbol_database as _symbol_database
 from google.protobuf.internal import builder as _builder
-_runtime_version.ValidateProtobufRuntimeVersion(
-    _runtime_version.Domain.PUBLIC,
-    6,
-    31,
-    1,
-    '',
-    'recommendation.proto'
-)
+
+_runtime_version.ValidateProtobufRuntimeVersion(_runtime_version.Domain.PUBLIC, 6, 31, 1, "", "recommendation.proto")
 # @@protoc_insertion_point(imports)
 
 _sym_db = _symbol_database.Default()
 
 
-
-
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x14recommendation.proto\"$\n\x10RecommendRequest\x12\x10\n\x08item_ids\x18\x01 \x03(\x05\"%\n\x11RecommendResponse\x12\x10\n\x08item_ids\x18\x01 \x03(\x05\x32\x41\n\x0bRecommender\x12\x32\n\tRecommend\x12\x11.RecommendRequest\x1a\x12.RecommendResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
+    b'\n\x14recommendation.proto"$\n\x10RecommendRequest\x12\x10\n\x08item_ids\x18\x01 \x03(\x05"%\n\x11RecommendResponse\x12\x10\n\x08item_ids\x18\x01 \x03(\x05\x32\x41\n\x0bRecommender\x12\x32\n\tRecommend\x12\x11.RecommendRequest\x1a\x12.RecommendResponseb\x06proto3'
+)
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
-_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'recommendation_pb2', _globals)
+_builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, "recommendation_pb2", _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
-  DESCRIPTOR._loaded_options = None
-  _globals['_RECOMMENDREQUEST']._serialized_start=24
-  _globals['_RECOMMENDREQUEST']._serialized_end=60
-  _globals['_RECOMMENDRESPONSE']._serialized_start=62
-  _globals['_RECOMMENDRESPONSE']._serialized_end=99
-  _globals['_RECOMMENDER']._serialized_start=101
-  _globals['_RECOMMENDER']._serialized_end=166
+    DESCRIPTOR._loaded_options = None
+    _globals["_RECOMMENDREQUEST"]._serialized_start = 24
+    _globals["_RECOMMENDREQUEST"]._serialized_end = 60
+    _globals["_RECOMMENDRESPONSE"]._serialized_start = 62
+    _globals["_RECOMMENDRESPONSE"]._serialized_end = 99
+    _globals["_RECOMMENDER"]._serialized_start = 101
+    _globals["_RECOMMENDER"]._serialized_end = 166
 # @@protoc_insertion_point(module_scope)
