@@ -100,8 +100,11 @@ jobs:
 
       - name: Setup Railway CLI
         run: |
-          curl -fsSL https://railway.io/install.sh | sh
-          echo "$HOME/.railway/bin" >> $GITHUB_PATH
+          curl -LO https://github.com/railwayapp/cli/releases/download/v3.0.18/railway_3.0.18_linux_amd64.tar.gz
+          tar -xzf railway_3.0.18_linux_amd64.tar.gz
+          chmod +x railway
+          sudo mv railway /usr/local/bin/
+          railway --version
 
       - name: Deploy application
         run: |
