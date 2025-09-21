@@ -98,9 +98,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy using Railway Docker image
-        uses: docker://railwayapp/cli:latest
-        with:
-          args: deploy --service mlops-rec-sys --environment production
+      - name: Setup Railway CLI
+        run: |
+          curl -o railway.deb -L https://github.com/railwayapp/cli/releases/download/v3.0.18/railway_3.0.18_linux_amd64.deb
+          sudo dpkg -i railway.deb || sudo apt-get install -f -y
+          railway --version
+
+      - name: Deploy application
+        run: |
+          railway login --ci ${{ secrets.RAILWAY_TOKEN }}
+          railway up --service mlops-rec-sys --environment production --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
