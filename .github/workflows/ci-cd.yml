@@ -94,7 +94,7 @@ jobs:
     runs-on: ubuntu-latest
     container: ghcr.io/railwayapp/cli:latest
     env:
-      SVC_ID: my-service
+      SVC_ID: mlops-rec-sys
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
