@@ -4,9 +4,9 @@ WORKDIR /app
 
 RUN pip install poetry
 
-COPY pyproject.toml poetry.lock ./
-COPY src ./src
-COPY models ./models
+COPY ../pyproject.toml poetry.lock ./
+COPY ../src ./src
+COPY ../models ./models
 
 RUN poetry config virtualenvs.create false && \
     poetry install --only main --no-interaction --no-ansi
