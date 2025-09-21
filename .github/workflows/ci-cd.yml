@@ -95,12 +95,12 @@ jobs:
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Deploy to Railway
-      uses: railwayapp/action@v1.1.0
-      with:
-        railway_token: ${{ secrets.RAILWAY_TOKEN }}
-        service: mlops-rec-sys
-        environment: production
+      - name: Deploy using Railway Docker image
+        uses: docker://railwayapp/cli:latest
+        with:
+          args: deploy --service mlops-rec-sys --environment production
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
