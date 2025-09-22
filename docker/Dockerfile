@@ -8,6 +8,8 @@ COPY ../pyproject.toml poetry.lock ./
 COPY ../src ./src
 COPY ../models ./models
 
+ENV PYTHONPATH=/app/src
+
 RUN poetry config virtualenvs.create false && \
     poetry install --only main --no-interaction --no-ansi
 
