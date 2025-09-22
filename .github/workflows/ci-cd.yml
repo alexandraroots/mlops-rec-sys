@@ -74,6 +74,7 @@ jobs:
             python -m pytest tests/ -v --cov=src --cov-report=xml
           else
             echo "No tests directory found, skipping tests"
+          fi
 
   docker-build-and-push:
     runs-on: ubuntu-latest
