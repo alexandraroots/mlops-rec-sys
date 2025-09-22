@@ -71,7 +71,7 @@ jobs:
       - name: Run unit tests
         run: |
           if [ -d "tests" ]; then
-            python -m pytest tests/ -v --cov=src --cov-report=xml
+            python -m pytest tests/
           else
             echo "No tests directory found, skipping tests"
           fi
