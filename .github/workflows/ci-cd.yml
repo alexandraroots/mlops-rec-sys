@@ -101,7 +101,7 @@ jobs:
           docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy:
-    needs: lint-and-test
+    needs: test
     runs-on: ubuntu-latest
     env:
       SERVER_SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
