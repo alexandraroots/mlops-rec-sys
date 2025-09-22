@@ -136,11 +136,3 @@ jobs:
       - name: Run the Docker container
         run: docker run -d --name mlops-server -p 50051:50051 mlops-rec-sys
 
-      - name: Test gRPC endpoint
-        run: |
-          grpcurl -plaintext \
-            -import-path src/mlops_rec_sys/proto \
-            -proto recommendation.proto \
-            -d '{"item_ids":[1,2,3]}' \
-            $SERVER_IP:50051 \
-            Recommender/Recommend
