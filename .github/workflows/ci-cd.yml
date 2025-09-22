@@ -89,16 +89,35 @@ jobs:
           ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
 
-  deploy-job:
+  jobs:
     needs: build-and-push
-    runs-on: ubuntu-latest
-    container: ghcr.io/railwayapp/cli:latest
-    env:
-      SVC_ID: mlops-rec-sys
-      RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+    run:
+      name: Run new container
+      runs-on: ubuntu-latest
+      env:
+        SERVER_SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
+        SERVER_IP: ${{ secrets.SERVER_IP }}
+        USER_NAME: ${{ secrets.USER_NAME }}
 
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v3
 
-    steps:
-      - uses: actions/checkout@v3
-      - run: railway up --service=${{ env.SVC_ID }}
+        - name: save key
+          run: |
+            mkdir -p ~/.ssh
+            echo "$SERVER_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+            chmod 600 ~/.ssh/id_rsa
+            ssh-keyscan -H $SERVER_IP >> ~/.ssh/known_hosts
+
+        - name: Create docker context
+          run: docker context create --docker host=ssh://$USER_NAME@$SERVER_IP mlops_rec_sys
+
+        - name: Set docker context
+          run: docker context use mlops_rec_sys
+
+        - name: Build the Docker container
+          run: docker build -t mlops-rec-sys -f docker/Dockerfile .
+
+        - name: Run the Docker container
+          run: docker run -d --name mlops-server -p 50051:50051 mlops-rec-sys
