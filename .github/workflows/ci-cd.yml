@@ -106,12 +106,11 @@ jobs:
       SERVER_SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
       SERVER_IP: ${{ secrets.SERVER_IP }}
       USER_NAME: ${{ secrets.USER_NAME }}
-      IMAGE_NAME: ${{ env.IMAGE_NAME }}
-      REGISTRY: ${{ env.REGISTRY }}
-
+      REGISTRY: ghcr.io
+      IMAGE_NAME: mlops-rec-sys
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Save SSH key
         run: |
@@ -129,18 +128,19 @@ jobs:
       - name: Stop and remove old container
         run: |
           docker ps -a --format '{{.Names}}' | grep -w mlops-server && \
-          docker stop mlops-server && \
-          docker rm mlops-server || true
+          docker stop mlops-server && docker rm mlops-server || true
 
       - name: Pull latest Docker image
-        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: |
+          docker pull $REGISTRY/$IMAGE_NAME:latest
 
       - name: Remove old Docker image (optional)
         run: |
-          docker images -q ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} | xargs -r docker rmi -f
+          docker images -q $REGISTRY/$IMAGE_NAME | xargs -r docker rmi -f
 
       - name: Run the Docker container
-        run: docker run -d --name mlops-server -p 50051:50051 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+        run: |
+          docker run -d --name mlops-server -p 50051:50051 $REGISTRY/$IMAGE_NAME:latest
 
       - name: Check container status
         run: docker ps | grep mlops-server
