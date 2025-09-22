@@ -11,61 +11,109 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  lint-and-test:
+
+  lint:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ['3.13']
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
 
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install flake8 black pylint pytest
-        pip install -e .
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black pylint
+          pip install -e .
 
-    - name: Lint with flake8
-      run: |
-        flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
-        flake8 src --count --max-complexity=10 --max-line-length=127 --statistics
+      - name: Lint with flake8
+        run: |
+          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
+          flake8 src --count --max-complexity=10 --max-line-length=127 --statistics
 
-    - name: Check formatting with black
-      run: |
-        black --check src/
+      - name: Check formatting with black
+        run: |
+          black --check src/
 
-    - name: Run pylint
-      run: |
-        pylint src/ --disable=all --enable=E,F --fail-under=8
+      - name: Run pylint
+        run: |
+          pylint src/ --disable=all --enable=E,F --fail-under=8
 
-    - name: Run unit tests
-      run: |
-        if [ -d "tests" ]; then
-          python -m pytest tests/ -v --cov=src --cov-report=xml
-        else
-          echo "No tests directory found, skipping tests"
-        fi
+  test:
+    runs-on: ubuntu-latest
+    needs: lint
+    strategy:
+      matrix:
+        python-version: ['3.13']
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest
+          pip install -e .
+
+      - name: Run unit tests
+        run: |
+          if [ -d "tests" ]; then
+            python -m pytest tests/ -v --cov=src --cov-report=xml
+          else
+            echo "No tests directory found, skipping tests"
+
+  docker-build-and-push:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Docker image
+        run: |
+          docker build -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest -f docker/Dockerfile .
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          docker push ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy:
-    needs: lint-and-test
     runs-on: ubuntu-latest
+    needs: docker-build-and-push
     env:
       SERVER_SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
       SERVER_IP: ${{ secrets.SERVER_IP }}
       USER_NAME: ${{ secrets.USER_NAME }}
+      IMAGE_NAME: ${{ env.IMAGE_NAME }}
+      REGISTRY: ${{ env.REGISTRY }}
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: save key
+      - name: Save SSH key
         run: |
           mkdir -p ~/.ssh
           echo "$SERVER_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
@@ -78,13 +126,30 @@ jobs:
       - name: Set docker context
         run: docker context use mlops_rec_sys
 
-      - name: Delete docker context
-        run: docker ps -a --format '{{.Names}}' | grep -w mlops-server && \
+      - name: Stop and remove old container
+        run: |
+          docker ps -a --format '{{.Names}}' | grep -w mlops-server && \
           docker stop mlops-server && \
           docker rm mlops-server || true
 
-      - name: Build the Docker container
-        run: docker build -t mlops-rec-sys -f docker/Dockerfile .
+      - name: Pull latest Docker image
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Remove old Docker image (optional)
+        run: |
+          docker images -q ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }} | xargs -r docker rmi -f
 
       - name: Run the Docker container
-        run: docker run -d --name mlops-server -p 50051:50051 mlops-rec-sys
+        run: docker run -d --name mlops-server -p 50051:50051 ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      - name: Check container status
+        run: docker ps | grep mlops-server
+
+      - name: Test gRPC endpoint
+        run: |
+          grpcurl -plaintext \
+            -import-path src/mlops_rec_sys/proto \
+            -proto recommendation.proto \
+            -d '{"item_ids":[1,2,3]}' \
+            $SERVER_IP:50051 \
+            Recommender/Recommend
