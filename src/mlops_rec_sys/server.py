@@ -7,20 +7,28 @@ import grpc
 import numpy as np
 import onnxruntime as ort
 import proto.recommendation_pb2 as recommendation_pb2
+from prometheus_client import Counter, Gauge, Summary, start_http_server
 from proto.recommendation_pb2_grpc import RecommenderServicer, add_RecommenderServicer_to_server
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+REQUEST_TIME = Summary("grpc_request_duration_seconds", "Time spent processing gRPC request")
+REQUEST_COUNT = Counter("grpc_requests_total", "Total number of gRPC requests", ["method", "code"])
+REQUESTS_IN_PROGRESS = Gauge("grpc_requests_in_progress", "Number of gRPC requests in progress", ["method"])
+
+
+class LoggingInterceptor(grpc.ServerInterceptor):
+    def intercept_service(self, continuation, handler_call_details):
+        start = time.time()
+        response = continuation(handler_call_details)
+        duration = time.time() - start
+        logger.info(f"[gRPC] {handler_call_details.method} - {duration:.4f}s")
+        return response
+
 
 class RecommenderService(RecommenderServicer):
     def __init__(self, model_path: str):
-        """
-        Инициализация сервиса с загрузкой ONNX модели
-
-        Args:
-            model_path: путь к ONNX модели
-        """
         logger.info(f"🔄 Загрузка ONNX модели из {model_path}...")
         try:
             self.session = ort.InferenceSession(model_path, providers=["CPUExecutionProvider"])
@@ -36,16 +44,19 @@ class RecommenderService(RecommenderServicer):
             logger.error(f"❌ Ошибка загрузки модели: {e}")
             raise
 
+    @REQUEST_TIME.time()
     def Recommend(self, request, context):
         """
         Обработка gRPC запроса для получения рекомендаций
         """
+        method = "Recommender/Recommend"
         try:
             item_ids = list(request.item_ids)
 
             if not item_ids:
                 context.set_code(grpc.StatusCode.INVALID_ARGUMENT)
                 context.set_details("Пустой список item_ids")
+                REQUEST_COUNT.labels(method=method, code="INVALID_ARGUMENT").inc()
                 logger.warning("⚠️ Получен пустой список item_ids")
                 return recommendation_pb2.RecommendResponse()
 
@@ -56,6 +67,7 @@ class RecommenderService(RecommenderServicer):
             recommendations = self._get_recommendations(input_data)
 
             logger.info(f"📤 Отправляем рекомендации: {recommendations.tolist()}")
+            REQUEST_COUNT.labels(method=method, code="OK").inc()
 
             return recommendation_pb2.RecommendResponse(item_ids=recommendations.tolist())
 
@@ -63,7 +75,10 @@ class RecommenderService(RecommenderServicer):
             logger.error(f"❌ Ошибка при обработке запроса: {e}")
             context.set_code(grpc.StatusCode.INTERNAL)
             context.set_details(f"Ошибка сервера: {str(e)}")
+            REQUEST_COUNT.labels(method=method, code="INTERNAL").inc()
             return recommendation_pb2.RecommendResponse()
+        finally:
+            REQUESTS_IN_PROGRESS.labels(method=method).dec()
 
     def _get_recommendations(self, input_data: np.ndarray) -> np.ndarray:
         """
@@ -80,9 +95,6 @@ class RecommenderService(RecommenderServicer):
 
 
 def serve():
-    """
-    Запуск gRPC сервера
-    """
     base_dir = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
     model_path = os.path.join(base_dir, "models", "recommendation_model.onnx")
 
@@ -92,20 +104,26 @@ def serve():
 
     server = grpc.server(
         futures.ThreadPoolExecutor(max_workers=10),
-        options=[("grpc.max_send_message_length", 50 * 1024 * 1024), ("grpc.max_receive_message_length", 50 * 1024 * 1024)],
+        options=[
+            ("grpc.max_send_message_length", 50 * 1024 * 1024),
+            ("grpc.max_receive_message_length", 50 * 1024 * 1024),
+        ],
     )
 
     service = RecommenderService(model_path)
 
     add_RecommenderServicer_to_server(service, server)
 
-    port = 50051
-    server.add_insecure_port(f"[::]:{port}")
+    grpc_port = 50051
+    metrics_port = 8000
+
+    server.add_insecure_port(f"[::]:{grpc_port}")
     server.start()
 
-    logger.info(f"🚀 gRPC сервер запущен на порту {port}")
+    start_http_server(metrics_port)
+    logger.info(f"🚀 gRPC сервер запущен на порту {grpc_port}")
+    logger.info(f"📊 Метрики Prometheus доступны на порту {metrics_port} (/metrics)")
     logger.info(f"📁 Модель загружена из: {model_path}")
-    logger.info("📡 Ожидаем запросы...")
 
     try:
         while True:

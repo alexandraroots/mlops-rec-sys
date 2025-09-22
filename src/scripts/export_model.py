@@ -2,6 +2,9 @@ import logging
 
 import torch
 
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class Model(torch.nn.Module):
     def __init__(self, num_recommendations: int = 10, device: str = "cpu") -> None:
@@ -39,7 +42,7 @@ def export_to_onnx(model: Model, name_model: str = "recommendation_model.onnx"):
         verbose=False,
     )
 
-    logging.info("✅ Модель успешно экспортирована в ONNX")
+    logger.info("✅ Модель успешно экспортирована в ONNX")
 
 
 if __name__ == "__main__":
