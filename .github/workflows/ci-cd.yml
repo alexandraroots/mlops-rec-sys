@@ -125,6 +125,9 @@ jobs:
       - name: Set docker context
         run: docker context use mlops_rec_sys
 
+      - name: Check files
+        run: ls -lah .
+
       - name: Build and run docker container
         run: docker compose up --build -d
 
