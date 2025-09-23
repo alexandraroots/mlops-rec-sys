@@ -126,6 +126,6 @@ jobs:
         run: docker context use mlops_rec_sys
 
       - name: Build and run docker container
-        run: docker-compose -f docker/docker-compose.yml up --build
+        run: docker compose -f docker/docker-compose.yml up --build
 
 

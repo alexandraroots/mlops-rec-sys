@@ -24,6 +24,8 @@ docker-compose -f docker/docker-compose.yml up --build
 
 - gRPC API доступен на localhost:50051
 - Метрики Prometheus доступны на localhost:8000/metrics
+- Prometheus доступен на localhost:9090
+- Grafana доступна на localhost:3000
 
 ### Проверка работоспособности
 
@@ -54,7 +56,7 @@ python src/mlops_rec_sys/client.py localhost:50051
 ```
 
 ### Архитектура
-Общая архитектура системы
+Общая структура проекта
 
 ```text
 mlops-rec-sys/
