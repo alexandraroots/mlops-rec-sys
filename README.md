@@ -36,7 +36,7 @@ grpcurl -plaintext \
   -import-path ./ \
   -proto src/mlops_rec_sys/proto/recommendation.proto \
   -d '{"item_ids":[1, 2, 3, 10, 15]}' \
-  localhost:50051 \
+  rec-sys.alexroots.dev:50051 \
   Recommender/Recommend
 ```
 
