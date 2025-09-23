@@ -4,15 +4,15 @@ WORKDIR /app
 
 RUN pip install poetry
 
-COPY ../pyproject.toml poetry.lock ./
-COPY ../src ./src
-COPY ../models ./models
+COPY pyproject.toml poetry.lock ./
+COPY src ./src
+COPY models ./models
 
 ENV PYTHONPATH=/app/src
 
 RUN poetry config virtualenvs.create false && \
     poetry install --only main --no-interaction --no-ansi
 
-EXPOSE 50051
+EXPOSE 50051 8000
 
 CMD ["python", "src/mlops_rec_sys/server.py"]

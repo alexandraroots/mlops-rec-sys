@@ -125,14 +125,7 @@ jobs:
       - name: Set docker context
         run: docker context use mlops_rec_sys
 
-      - name: Delete docker container
-        run: docker ps -a --format '{{.Names}}' | grep -w mlops-server && \
-          docker stop mlops-server && \
-          docker rm mlops-server || true
+      - name: Build and run docker container
+        run: docker-compose -f docker/docker-compose.yml up --build
 
-      - name: Build the Docker container
-        run: docker build -t mlops-rec-sys -f docker/Dockerfile .
-
-      - name: Run the Docker container
-        run: docker run -d --name mlops-server -p 50051:50051 mlops-rec-sys
 

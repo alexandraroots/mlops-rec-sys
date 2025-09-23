@@ -14,7 +14,12 @@ docker build -t mlops-rec-sys -f docker/Dockerfile .
 
 2. Запуск сервиса
 ```bash
-docker run -d --name mlops-server -p 50051:50051 mlops-rec-sys
+docker run -d --name mlops-server -p 50051:50051 -p 8000:8000 mlops-rec-sys
+```
+
+3. Или через docker-compose
+```bash
+docker-compose -f docker/docker-compose.yml up --build
 ```
 
 - gRPC API доступен на localhost:50051
@@ -29,7 +34,7 @@ grpcurl -plaintext \
   -import-path ./ \
   -proto src/mlops_rec_sys/proto/recommendation.proto \
   -d '{"item_ids":[1, 2, 3, 10, 15]}' \
-  rec-sys.alexroots.dev:50051 \
+  localhost:50051 \
   Recommender/Recommend
 ```
 
@@ -78,10 +83,10 @@ mlops-rec-sys/
 │   Prometheus    │ ◄────────────────────────────┤
 │   (Метрики)     │                               │
 └─────────────────┘                               │
-                                      ┌───────────▼──────────┐
-                                      │   ONNX Модель        │
+                                      ┌───────────▼──────────────┐
+                                      │   ONNX Модель            │
                                       │  █ recommendation_model.onnx
-                                      └──────────────────────┘
+                                      └────────────────────────┘
 ```
 
 ### Мониторинг
