@@ -3,13 +3,10 @@ version: '3.8'
 services:
   recommender:
     build:
-      context: ..
       dockerfile: Dockerfile
     ports:
       - "50051:50051"
       - "8000:8000"
-    networks:
-      - monitoring
 
   prometheus:
     image: prom/prometheus:latest
@@ -20,8 +17,6 @@ services:
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--web.enable-lifecycle'
-    networks:
-      - monitoring
 
   grafana:
     image: grafana/grafana:latest
@@ -31,12 +26,6 @@ services:
       - GF_SECURITY_ADMIN_PASSWORD=admin
     volumes:
       - grafana-storage:/var/lib/grafana
-    networks:
-      - monitoring
 
 volumes:
   grafana-storage:
-
-networks:
-  monitoring:
-    driver: bridge
